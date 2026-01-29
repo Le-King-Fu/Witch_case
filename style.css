@@ -119,6 +119,51 @@ h1 {
     margin-bottom: 20px;
 }
 
+.difficulty-selector {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.difficulty-selector label {
+    color: #888;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.difficulty-selector select {
+    background: rgba(0, 0, 0, 0.5);
+    color: #00ff88;
+    border: 2px solid #e94560;
+    padding: 8px 15px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.difficulty-selector select:hover {
+    background: rgba(233, 69, 96, 0.2);
+}
+
+.difficulty-selector select:focus {
+    box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+}
+
+.difficulty-selector select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.difficulty-selector select option {
+    background: #1a1a2e;
+    color: #00ff88;
+}
+
 .control-btn {
     background: linear-gradient(180deg, #e94560 0%, #c73e54 100%);
     color: white;

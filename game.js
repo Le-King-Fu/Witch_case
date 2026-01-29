@@ -7,7 +7,11 @@ const DECOY_COUNT = 4; // Number of wrong letters to display
 
 // Letter sequence pattern
 const PATTERN = 'pascal_';
+const PASCAL_LETTERS = 'pascal_'; // Letters used for hard mode decoys
 const ALL_LETTERS = 'abcdefghijklmnopqrstuvwxyz_';
+
+// Difficulty levels: 'easy', 'medium', 'hard'
+let difficulty = 'easy';
 
 // Game state
 let canvas, ctx;
@@ -27,6 +31,7 @@ let gameLoop = null;
 let currentScoreEl, bestScoreEl, lastScoreEl;
 let startBtn;
 let bonusOverlay, bonusImage, bonusText;
+let difficultySelect;
 
 // Initialize game
 function init() {
@@ -42,10 +47,21 @@ function init() {
     bonusOverlay = document.getElementById('bonus-overlay');
     bonusImage = document.getElementById('bonus-image');
     bonusText = document.getElementById('bonus-text');
+    difficultySelect = document.getElementById('difficulty');
 
     // Load scores from localStorage
     bestScore = parseInt(localStorage.getItem('witchcase_bestScore')) || 0;
     lastScore = parseInt(localStorage.getItem('witchcase_lastScore')) || 0;
+    difficulty = localStorage.getItem('witchcase_difficulty') || 'easy';
+
+    if (difficultySelect) {
+        difficultySelect.value = difficulty;
+        difficultySelect.addEventListener('change', (e) => {
+            difficulty = e.target.value;
+            localStorage.setItem('witchcase_difficulty', difficulty);
+        });
+    }
+
     updateScoreDisplay();
 
     // Event listeners
@@ -94,6 +110,11 @@ function startGame() {
     gameRunning = true;
     startBtn.textContent = 'Stop';
 
+    // Disable difficulty change during game
+    if (difficultySelect) {
+        difficultySelect.disabled = true;
+    }
+
     updateScoreDisplay();
     spawnLetters();
 
@@ -106,6 +127,11 @@ function stopGame() {
     clearInterval(gameLoop);
     gameLoop = null;
     startBtn.textContent = 'Start';
+
+    // Re-enable difficulty change
+    if (difficultySelect) {
+        difficultySelect.disabled = false;
+    }
 
     // Save scores
     if (score > 0) {
@@ -205,13 +231,8 @@ function collectLetter(letterObj, isCorrect) {
         // Move to next letter in pattern
         currentLetterIndex = (currentLetterIndex + 1) % PATTERN.length;
     } else {
-        // Wrong letter collected - reset to 'P' (index 0 in pattern which is 'p',
-        // but we want uppercase 'P' so we set to index 0 and handle specially)
-        // Actually the pattern is "pascal_" and starts collecting at index 1 ('a')
-        // After wrong letter, next should be 'P' (uppercase), which means
-        // we reset to wanting index 0, but that gives lowercase 'p'
-        // We need to spawn uppercase 'P' as the target
-        currentLetterIndex = 0; // Will spawn 'P' (we'll make it uppercase in spawnLetters)
+        // Wrong letter collected - reset to 'P'
+        currentLetterIndex = 0;
     }
 
     updateScoreDisplay();
@@ -219,10 +240,10 @@ function collectLetter(letterObj, isCorrect) {
 }
 
 function checkBonuses() {
-    // Build current snake string
+    // Build current snake string (lowercase for case-insensitive comparison)
     const snakeString = snake.map(s => s.letter).join('');
 
-    // Count complete "Pascal" and "_pascal" patterns
+    // Count complete "Pascal" and "_pascal" patterns (case-insensitive)
     const newPascalCount = countPascals(snakeString);
 
     if (newPascalCount > pascalCount) {
@@ -241,20 +262,20 @@ function checkBonuses() {
 }
 
 function countPascals(str) {
-    // Check how many complete "Pascal" words we have
+    // Check how many complete "Pascal" words we have (case-insensitive)
     // First one is "Pascal" (6 chars), subsequent are "_pascal" (7 chars each)
 
     if (str.length < 6) return 0;
 
-    // Check if starts with "Pascal"
-    if (str.substring(0, 6) !== 'Pascal') return 0;
+    // Case-insensitive check if starts with "Pascal"
+    if (str.substring(0, 6).toLowerCase() !== 'pascal') return 0;
 
     let count = 1;
     let pos = 6;
 
-    // Check for additional "_pascal" patterns
+    // Check for additional "_pascal" patterns (case-insensitive)
     while (pos + 7 <= str.length) {
-        if (str.substring(pos, pos + 7) === '_pascal') {
+        if (str.substring(pos, pos + 7).toLowerCase() === '_pascal') {
             count++;
             pos += 7;
         } else {
@@ -303,15 +324,23 @@ function spawnLetters() {
         isTarget: true
     });
 
-    // Spawn decoy letters (wrong letters)
+    // Spawn decoy letters based on difficulty
     for (let i = 0; i < DECOY_COUNT; i++) {
         const pos = findEmptyPosition();
         if (pos) {
-            // Pick a random letter that's NOT the target (case-insensitive comparison)
             let decoyLetter;
-            do {
-                decoyLetter = ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
-            } while (decoyLetter.toLowerCase() === targetLetter.toLowerCase());
+
+            if (difficulty === 'hard') {
+                // Hard mode: decoys are only pascal_ letters
+                do {
+                    decoyLetter = PASCAL_LETTERS[Math.floor(Math.random() * PASCAL_LETTERS.length)];
+                } while (decoyLetter.toLowerCase() === targetLetter.toLowerCase());
+            } else {
+                // Easy/Medium mode: decoys are random letters
+                do {
+                    decoyLetter = ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
+                } while (decoyLetter.toLowerCase() === targetLetter.toLowerCase());
+            }
 
             letters.push({
                 x: pos.x,
@@ -374,16 +403,23 @@ function draw() {
     ctx.textBaseline = 'middle';
 
     letters.forEach(letterObj => {
-        if (letterObj.isTarget) {
-            // Target letter - green with glow
-            ctx.fillStyle = '#00ff88';
-            ctx.shadowColor = '#00ff88';
-            ctx.shadowBlur = 10;
+        // Color based on difficulty
+        if (difficulty === 'easy') {
+            // Easy: green for target, red for decoys
+            if (letterObj.isTarget) {
+                ctx.fillStyle = '#00ff88';
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 10;
+            } else {
+                ctx.fillStyle = '#ff6b6b';
+                ctx.shadowColor = '#ff6b6b';
+                ctx.shadowBlur = 5;
+            }
         } else {
-            // Decoy letter - red/orange (danger)
-            ctx.fillStyle = '#ff6b6b';
-            ctx.shadowColor = '#ff6b6b';
-            ctx.shadowBlur = 5;
+            // Medium & Hard: all letters same color (yellow/gold)
+            ctx.fillStyle = '#ffcc00';
+            ctx.shadowColor = '#ffcc00';
+            ctx.shadowBlur = 8;
         }
 
         ctx.fillText(

@@ -3,16 +3,18 @@ const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
 const GAME_SPEED = 150; // ms between updates
+const DECOY_COUNT = 4; // Number of wrong letters to display
 
 // Letter sequence pattern
 const PATTERN = 'pascal_';
+const ALL_LETTERS = 'abcdefghijklmnopqrstuvwxyz_';
 
 // Game state
 let canvas, ctx;
 let snake = [];
 let direction = { x: 1, y: 0 };
 let nextDirection = { x: 1, y: 0 };
-let targetLetter = null;
+let letters = []; // Array of {x, y, letter, isTarget}
 let currentLetterIndex = 0;
 let pascalCount = 0;
 let score = 0;
@@ -88,11 +90,12 @@ function startGame() {
     currentLetterIndex = 1; // Start at 'a' (index 1 of "pascal_")
     pascalCount = 0;
     score = 0;
+    letters = [];
     gameRunning = true;
     startBtn.textContent = 'Stop';
 
     updateScoreDisplay();
-    spawnLetter();
+    spawnLetters();
 
     // Start game loop
     gameLoop = setInterval(update, GAME_SPEED);
@@ -130,61 +133,89 @@ function update() {
 
     // Calculate new head position
     const head = snake[0];
-    const newHead = {
-        x: head.x + direction.x,
-        y: head.y + direction.y,
-        letter: head.letter
-    };
+    const newHeadX = head.x + direction.x;
+    const newHeadY = head.y + direction.y;
 
     // Check wall collision
-    if (newHead.x < 0 || newHead.x >= GRID_SIZE ||
-        newHead.y < 0 || newHead.y >= GRID_SIZE) {
+    if (newHeadX < 0 || newHeadX >= GRID_SIZE ||
+        newHeadY < 0 || newHeadY >= GRID_SIZE) {
         gameOver();
         return;
     }
 
-    // Check self collision
-    for (let i = 0; i < snake.length; i++) {
-        if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+    // Check self collision (exclude tail as it will move away)
+    for (let i = 0; i < snake.length - 1; i++) {
+        if (snake[i].x === newHeadX && snake[i].y === newHeadY) {
             gameOver();
             return;
         }
     }
 
-    // Check letter collection
-    if (targetLetter && newHead.x === targetLetter.x && newHead.y === targetLetter.y) {
-        collectLetter(newHead);
-    } else {
-        // Move snake (remove tail)
-        snake.pop();
+    // Check letter collision
+    const hitLetter = letters.find(l => l.x === newHeadX && l.y === newHeadY);
+    let collected = false;
+
+    if (hitLetter) {
+        if (hitLetter.isTarget) {
+            // Correct letter - collect it
+            collectLetter(hitLetter, true);
+        } else {
+            // Wrong letter - collect but reset sequence to 'P'
+            collectLetter(hitLetter, false);
+        }
+        collected = true;
     }
 
-    // Add new head
-    snake.unshift(newHead);
+    // Store old tail position (needed if we collected a letter)
+    const oldTailPos = { x: snake[snake.length - 1].x, y: snake[snake.length - 1].y };
+
+    // Move snake: shift positions from tail to head
+    // Each segment takes the position of the one in front of it
+    for (let i = snake.length - 1; i > 0; i--) {
+        snake[i].x = snake[i - 1].x;
+        snake[i].y = snake[i - 1].y;
+        // Letters stay with their segments!
+    }
+
+    // Move head to new position
+    snake[0].x = newHeadX;
+    snake[0].y = newHeadY;
+
+    // If we collected a letter, add new segment at old tail position
+    if (collected) {
+        snake.push({
+            x: oldTailPos.x,
+            y: oldTailPos.y,
+            letter: hitLetter.letter
+        });
+    }
 
     draw();
 }
 
-function collectLetter(position) {
-    // Add letter to snake at the new position
-    const letter = targetLetter.letter;
-    snake.unshift({
-        x: position.x,
-        y: position.y,
-        letter: letter
-    });
-
+function collectLetter(letterObj, isCorrect) {
     // Update score
     score += 100;
 
-    // Check for bonuses
-    checkBonuses();
+    if (isCorrect) {
+        // Check for bonuses (need to check AFTER adding the letter)
+        // We'll check in a moment after the letter is added to snake
+        setTimeout(() => checkBonuses(), 0);
 
-    // Move to next letter
-    currentLetterIndex = (currentLetterIndex + 1) % PATTERN.length;
+        // Move to next letter in pattern
+        currentLetterIndex = (currentLetterIndex + 1) % PATTERN.length;
+    } else {
+        // Wrong letter collected - reset to 'P' (index 0 in pattern which is 'p',
+        // but we want uppercase 'P' so we set to index 0 and handle specially)
+        // Actually the pattern is "pascal_" and starts collecting at index 1 ('a')
+        // After wrong letter, next should be 'P' (uppercase), which means
+        // we reset to wanting index 0, but that gives lowercase 'p'
+        // We need to spawn uppercase 'P' as the target
+        currentLetterIndex = 0; // Will spawn 'P' (we'll make it uppercase in spawnLetters)
+    }
 
     updateScoreDisplay();
-    spawnLetter();
+    spawnLetters();
 }
 
 function checkBonuses() {
@@ -192,9 +223,6 @@ function checkBonuses() {
     const snakeString = snake.map(s => s.letter).join('');
 
     // Count complete "Pascal" and "_pascal" patterns
-    // Pattern starts with "P", then adds "ascal" to make "Pascal" (6 chars)
-    // Then adds "_pascal" (7 chars each) for "Pascal_pascal", etc.
-
     const newPascalCount = countPascals(snakeString);
 
     if (newPascalCount > pascalCount) {
@@ -208,6 +236,7 @@ function checkBonuses() {
             showBonus(false, 'Snaaaaaaaake!');
         }
         pascalCount = newPascalCount;
+        updateScoreDisplay();
     }
 }
 
@@ -253,23 +282,71 @@ function showBonus(showImage, text) {
     }, 1500);
 }
 
-function spawnLetter() {
-    const letter = PATTERN[currentLetterIndex];
-    let x, y;
-    let attempts = 0;
+function spawnLetters() {
+    letters = [];
 
-    // Find empty position
+    // Get the target letter
+    // Index 0 = 'P' (uppercase for new sequence start), otherwise follow pattern
+    let targetLetter;
+    if (currentLetterIndex === 0) {
+        targetLetter = 'P'; // Uppercase P to start a new sequence
+    } else {
+        targetLetter = PATTERN[currentLetterIndex];
+    }
+
+    // Spawn the correct target letter
+    const targetPos = findEmptyPosition();
+    letters.push({
+        x: targetPos.x,
+        y: targetPos.y,
+        letter: targetLetter,
+        isTarget: true
+    });
+
+    // Spawn decoy letters (wrong letters)
+    for (let i = 0; i < DECOY_COUNT; i++) {
+        const pos = findEmptyPosition();
+        if (pos) {
+            // Pick a random letter that's NOT the target (case-insensitive comparison)
+            let decoyLetter;
+            do {
+                decoyLetter = ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
+            } while (decoyLetter.toLowerCase() === targetLetter.toLowerCase());
+
+            letters.push({
+                x: pos.x,
+                y: pos.y,
+                letter: decoyLetter,
+                isTarget: false
+            });
+        }
+    }
+}
+
+function findEmptyPosition() {
+    let attempts = 0;
+    let x, y;
+
     do {
         x = Math.floor(Math.random() * GRID_SIZE);
         y = Math.floor(Math.random() * GRID_SIZE);
         attempts++;
     } while (isOccupied(x, y) && attempts < 100);
 
-    targetLetter = { x, y, letter };
+    if (attempts >= 100) return null;
+    return { x, y };
 }
 
 function isOccupied(x, y) {
-    return snake.some(segment => segment.x === x && segment.y === y);
+    // Check snake
+    if (snake.some(segment => segment.x === x && segment.y === y)) {
+        return true;
+    }
+    // Check existing letters
+    if (letters.some(letter => letter.x === x && letter.y === y)) {
+        return true;
+    }
+    return false;
 }
 
 function draw() {
@@ -291,25 +368,32 @@ function draw() {
         ctx.stroke();
     }
 
-    // Draw target letter
-    if (targetLetter) {
-        ctx.fillStyle = '#00ff88';
-        ctx.font = 'bold 16px Courier New';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+    // Draw letters
+    ctx.font = 'bold 16px Courier New';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-        // Glow effect
-        ctx.shadowColor = '#00ff88';
-        ctx.shadowBlur = 10;
+    letters.forEach(letterObj => {
+        if (letterObj.isTarget) {
+            // Target letter - green with glow
+            ctx.fillStyle = '#00ff88';
+            ctx.shadowColor = '#00ff88';
+            ctx.shadowBlur = 10;
+        } else {
+            // Decoy letter - red/orange (danger)
+            ctx.fillStyle = '#ff6b6b';
+            ctx.shadowColor = '#ff6b6b';
+            ctx.shadowBlur = 5;
+        }
 
         ctx.fillText(
-            targetLetter.letter,
-            targetLetter.x * CELL_SIZE + CELL_SIZE / 2,
-            targetLetter.y * CELL_SIZE + CELL_SIZE / 2
+            letterObj.letter,
+            letterObj.x * CELL_SIZE + CELL_SIZE / 2,
+            letterObj.y * CELL_SIZE + CELL_SIZE / 2
         );
 
         ctx.shadowBlur = 0;
-    }
+    });
 
     // Draw snake
     snake.forEach((segment, index) => {

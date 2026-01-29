@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Witch_case - Snake Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Witch_case</h1>
+
+        <div class="score-board">
+            <div class="score-item">
+                <span class="score-label">Score</span>
+                <span id="current-score" class="score-value">0</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Best</span>
+                <span id="best-score" class="score-value">0</span>
+            </div>
+            <div class="score-item">
+                <span class="score-label">Last</span>
+                <span id="last-score" class="score-value">0</span>
+            </div>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="game-canvas"></canvas>
+            <div id="bonus-overlay" class="bonus-overlay hidden">
+                <img id="bonus-image" src="pascal.png" alt="Pascal" class="hidden">
+                <span id="bonus-text"></span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="start-btn" class="control-btn">Start</button>
+        </div>
+
+        <div class="d-pad">
+            <button class="d-btn up" data-direction="up">&#9650;</button>
+            <div class="d-row">
+                <button class="d-btn left" data-direction="left">&#9664;</button>
+                <button class="d-btn right" data-direction="right">&#9654;</button>
+            </div>
+            <button class="d-btn down" data-direction="down">&#9660;</button>
+        </div>
+
+        <p class="instructions">Use arrow keys or D-pad to move. Collect letters to spell "Pascal_pascal_pascal..."</p>
+
+        <a href="https://github.com/Le-King-Fu/Witch_case" class="back-link">&larr; Back to GitHub</a>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

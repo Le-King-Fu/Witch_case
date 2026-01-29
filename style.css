@@ -1,0 +1,228 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #e94560;
+}
+
+.game-container {
+    text-align: center;
+    padding: 20px;
+    max-width: 500px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #e94560, 0 0 20px #e94560;
+    letter-spacing: 4px;
+}
+
+.score-board {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #e94560;
+}
+
+.score-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.score-label {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.score-value {
+    font-size: 1.5rem;
+    color: #00ff88;
+    text-shadow: 0 0 5px #00ff88;
+}
+
+.canvas-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+#game-canvas {
+    background: #0a0a0a;
+    border: 3px solid #e94560;
+    border-radius: 5px;
+    box-shadow: 0 0 20px rgba(233, 69, 96, 0.3);
+}
+
+.bonus-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 5px;
+    animation: bonusPulse 0.5s ease-in-out;
+}
+
+.bonus-overlay.hidden {
+    display: none;
+}
+
+.bonus-overlay img {
+    max-width: 150px;
+    max-height: 150px;
+    margin-bottom: 15px;
+}
+
+.bonus-overlay img.hidden {
+    display: none;
+}
+
+#bonus-text {
+    font-size: 2rem;
+    color: #00ff88;
+    text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+    animation: textGlow 0.3s ease-in-out infinite alternate;
+}
+
+@keyframes bonusPulse {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes textGlow {
+    from { text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88; }
+    to { text-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88, 0 0 60px #00ff88; }
+}
+
+.controls {
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    background: linear-gradient(180deg, #e94560 0%, #c73e54 100%);
+    color: white;
+    border: none;
+    padding: 15px 50px;
+    font-size: 1.2rem;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 0 #8b2a3a, 0 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #8b2a3a, 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #8b2a3a, 0 4px 5px rgba(0, 0, 0, 0.3);
+}
+
+.d-pad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.d-row {
+    display: flex;
+    gap: 60px;
+}
+
+.d-btn {
+    width: 50px;
+    height: 50px;
+    background: rgba(233, 69, 96, 0.3);
+    border: 2px solid #e94560;
+    color: #e94560;
+    font-size: 1.5rem;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.1s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.d-btn:hover {
+    background: rgba(233, 69, 96, 0.5);
+}
+
+.d-btn:active {
+    background: #e94560;
+    color: white;
+    transform: scale(0.95);
+}
+
+.instructions {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.back-link {
+    color: #e94560;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #00ff88;
+    text-decoration: underline;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .score-value {
+        font-size: 1.2rem;
+    }
+
+    .control-btn {
+        padding: 12px 40px;
+        font-size: 1rem;
+    }
+
+    .d-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2rem;
+    }
+
+    .d-row {
+        gap: 50px;
+    }
+}

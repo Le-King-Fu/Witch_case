@@ -2,7 +2,11 @@
 const GRID_SIZE = 20;
 const CELL_SIZE = 20;
 const CANVAS_SIZE = GRID_SIZE * CELL_SIZE;
-const GAME_SPEED = 150; // ms between updates
+const GAME_SPEEDS = {
+    easy: 300,    // Slow (half speed)
+    medium: 150,  // Normal
+    hard: 150     // Normal
+};
 const DECOY_COUNT = 4; // Number of wrong letters to display
 
 // Letter sequence pattern
@@ -118,8 +122,8 @@ function startGame() {
     updateScoreDisplay();
     spawnLetters();
 
-    // Start game loop
-    gameLoop = setInterval(update, GAME_SPEED);
+    // Start game loop with difficulty-based speed
+    gameLoop = setInterval(update, GAME_SPEEDS[difficulty]);
 }
 
 function stopGame() {
